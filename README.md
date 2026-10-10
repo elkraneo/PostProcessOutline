@@ -19,7 +19,7 @@ How and why it works: [RealityKit Outline Selection](https://elkraneo.com/realit
 Swift Package Manager:
 
 ```swift
-.package(url: "https://github.com/elkraneo/PostProcessOutline.git", branch: "main")
+.package(url: "https://github.com/elkraneo/PostProcessOutline.git", from: "1.0.0")
 ```
 
 ## Usage
