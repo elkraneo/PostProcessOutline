@@ -1,3 +1,5 @@
+![PostProcessOutline: pixel-exact selection outlines for RealityKit](.github/banner.png)
+
 # PostProcessOutline
 
 A RealityKit post-process effect that renders pixel-exact selection outlines around 3D objects using Metal.
