@@ -1,6 +1,6 @@
 //
-//  PostProcessOutlineApp.swift
-//  PostProcessOutline
+//  PostProcessOutlineExampleApp.swift
+//  PostProcessOutlineExample
 //
 //  Created by Cristian Díaz on 29.03.26.
 //
@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct PostProcessOutlineApp: App {
+struct PostProcessOutlineExampleApp: App {
 	var body: some Scene {
 		WindowGroup {
 			ContentView()

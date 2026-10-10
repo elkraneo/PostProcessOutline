@@ -6,14 +6,18 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		AE8BDFB22F79AA2D008EAD7A /* PostProcessOutline in Frameworks */ = {isa = PBXBuildFile; productRef = AE8BDFB12F79AA2D008EAD7A /* PostProcessOutline */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
-		AE8BDFA02F79AA2C008EAD7A /* PostProcessOutline.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PostProcessOutline.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AE8BDFA02F79AA2C008EAD7A /* PostProcessOutlineExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PostProcessOutlineExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		AE8BDFA22F79AA2C008EAD7A /* PostProcessOutline */ = {
+		AE8BDFA22F79AA2C008EAD7A /* PostProcessOutlineExample */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = PostProcessOutline;
+			path = PostProcessOutlineExample;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AE8BDFB22F79AA2D008EAD7A /* PostProcessOutline in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -32,7 +37,7 @@
 		AE8BDF972F79AA2C008EAD7A = {
 			isa = PBXGroup;
 			children = (
-				AE8BDFA22F79AA2C008EAD7A /* PostProcessOutline */,
+				AE8BDFA22F79AA2C008EAD7A /* PostProcessOutlineExample */,
 				AE8BDFA12F79AA2C008EAD7A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -40,7 +45,7 @@
 		AE8BDFA12F79AA2C008EAD7A /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				AE8BDFA02F79AA2C008EAD7A /* PostProcessOutline.app */,
+				AE8BDFA02F79AA2C008EAD7A /* PostProcessOutlineExample.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,9 +53,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		AE8BDF9F2F79AA2C008EAD7A /* PostProcessOutline */ = {
+		AE8BDF9F2F79AA2C008EAD7A /* PostProcessOutlineExample */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AE8BDFAB2F79AA2D008EAD7A /* Build configuration list for PBXNativeTarget "PostProcessOutline" */;
+			buildConfigurationList = AE8BDFAB2F79AA2D008EAD7A /* Build configuration list for PBXNativeTarget "PostProcessOutlineExample" */;
 			buildPhases = (
 				AE8BDF9C2F79AA2C008EAD7A /* Sources */,
 				AE8BDF9D2F79AA2C008EAD7A /* Frameworks */,
@@ -61,13 +66,14 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				AE8BDFA22F79AA2C008EAD7A /* PostProcessOutline */,
+				AE8BDFA22F79AA2C008EAD7A /* PostProcessOutlineExample */,
 			);
-			name = PostProcessOutline;
+			name = PostProcessOutlineExample;
 			packageProductDependencies = (
+				AE8BDFB12F79AA2D008EAD7A /* PostProcessOutline */,
 			);
-			productName = PostProcessOutline;
-			productReference = AE8BDFA02F79AA2C008EAD7A /* PostProcessOutline.app */;
+			productName = PostProcessOutlineExample;
+			productReference = AE8BDFA02F79AA2C008EAD7A /* PostProcessOutlineExample.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -85,7 +91,7 @@
 					};
 				};
 			};
-			buildConfigurationList = AE8BDF9B2F79AA2C008EAD7A /* Build configuration list for PBXProject "PostProcessOutline" */;
+			buildConfigurationList = AE8BDF9B2F79AA2C008EAD7A /* Build configuration list for PBXProject "PostProcessOutlineExample" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -94,12 +100,15 @@
 			);
 			mainGroup = AE8BDF972F79AA2C008EAD7A;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				AE8BDFB02F79AA2D008EAD7A /* XCLocalSwiftPackageReference ".." */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = AE8BDFA12F79AA2C008EAD7A /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				AE8BDF9F2F79AA2C008EAD7A /* PostProcessOutline */,
+				AE8BDF9F2F79AA2C008EAD7A /* PostProcessOutlineExample */,
 			);
 		};
 /* End PBXProject section */
@@ -264,24 +273,23 @@
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.reality2713.PostProcessOutline;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
-				XROS_DEPLOYMENT_TARGET = 26.4;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -308,31 +316,30 @@
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.reality2713.PostProcessOutline;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
-				XROS_DEPLOYMENT_TARGET = 26.4;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		AE8BDF9B2F79AA2C008EAD7A /* Build configuration list for PBXProject "PostProcessOutline" */ = {
+		AE8BDF9B2F79AA2C008EAD7A /* Build configuration list for PBXProject "PostProcessOutlineExample" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AE8BDFA92F79AA2D008EAD7A /* Debug */,
@@ -341,7 +348,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AE8BDFAB2F79AA2D008EAD7A /* Build configuration list for PBXNativeTarget "PostProcessOutline" */ = {
+		AE8BDFAB2F79AA2D008EAD7A /* Build configuration list for PBXNativeTarget "PostProcessOutlineExample" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AE8BDFAC2F79AA2D008EAD7A /* Debug */,
@@ -351,6 +358,20 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		AE8BDFB02F79AA2D008EAD7A /* XCLocalSwiftPackageReference ".." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ..;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AE8BDFB12F79AA2D008EAD7A /* PostProcessOutline */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PostProcessOutline;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = AE8BDF982F79AA2C008EAD7A /* Project object */;
 }

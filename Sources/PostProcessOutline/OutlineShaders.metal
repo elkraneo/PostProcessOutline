@@ -16,11 +16,11 @@ struct MaskUniforms {
 };
 
 vertex float4 outlineMaskVertex(
-    const device packed_float3* positions [[buffer(0)]],
+    const device float3* positions       [[buffer(0)]],
     constant MaskUniforms& u             [[buffer(1)]],
     uint vid                             [[vertex_id]]
 ) {
-    return u.mvp * float4(float3(positions[vid]), 1.0);
+    return u.mvp * float4(positions[vid], 1.0);
 }
 
 fragment float4 outlineMaskFragment(float4 position [[position]]) {

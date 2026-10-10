@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "AE8BDF9F2F79AA2C008EAD7A"
-               BuildableName = "PostProcessOutline.app"
-               BlueprintName = "PostProcessOutline"
-               ReferencedContainer = "container:PostProcessOutline.xcodeproj">
+               BuildableName = "PostProcessOutlineExample.app"
+               BlueprintName = "PostProcessOutlineExample"
+               ReferencedContainer = "container:PostProcessOutlineExample.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -46,9 +46,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "AE8BDF9F2F79AA2C008EAD7A"
-            BuildableName = "PostProcessOutline.app"
-            BlueprintName = "PostProcessOutline"
-            ReferencedContainer = "container:PostProcessOutline.xcodeproj">
+            BuildableName = "PostProcessOutlineExample.app"
+            BlueprintName = "PostProcessOutlineExample"
+            ReferencedContainer = "container:PostProcessOutlineExample.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -63,9 +63,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "AE8BDF9F2F79AA2C008EAD7A"
-            BuildableName = "PostProcessOutline.app"
-            BlueprintName = "PostProcessOutline"
-            ReferencedContainer = "container:PostProcessOutline.xcodeproj">
+            BuildableName = "PostProcessOutlineExample.app"
+            BlueprintName = "PostProcessOutlineExample"
+            ReferencedContainer = "container:PostProcessOutlineExample.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
