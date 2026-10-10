@@ -2,7 +2,7 @@
 
 Pixel-exact selection outlines for RealityKit, as a Metal post-process. Constant pixel width, follows moving entities, supports multi-selection, and never touches your scene. [How it works →](https://elkraneo.com/realitykit-outline-selection/)
 
-![Outline steps](https://elkraneo.com/content/images/2026/04/steps.gif)
+![The same outline in RealityView, then ARView](.github/demo.gif)
 
 ## Install
 
