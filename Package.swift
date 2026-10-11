@@ -7,6 +7,8 @@ let package = Package(
 	platforms: [
 		.iOS(.v15),
 		.macOS(.v12),
+		// RealityKit's ARView / ModelComponent APIs exist on tvOS from 26.
+		.tvOS("26.0"),
 	],
 	products: [
 		.library(
@@ -22,6 +24,10 @@ let package = Package(
 				// loaded at runtime via `Bundle.module`.
 				.process("OutlineShaders.metal")
 			]
-		)
+		),
+		.testTarget(
+			name: "PostProcessOutlineTests",
+			dependencies: ["PostProcessOutline"]
+		),
 	]
 )

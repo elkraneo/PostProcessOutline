@@ -30,6 +30,8 @@ struct OutlineMeshData: Sendable {
 /// The owner is held weakly so a selection never keeps an entity alive.
 /// The model matrix is `owner world transform × localTransform`, re-read
 /// every frame via `OutlineRenderer.updateTransforms()`.
+@available(iOS 15.0, macOS 12.0, tvOS 26.0, *)
+@available(visionOS, unavailable)
 struct OutlineSelectedMesh: Sendable {
 	weak var owner: Entity?
 	let localTransform: simd_float4x4
@@ -37,9 +39,24 @@ struct OutlineSelectedMesh: Sendable {
 
 	/// Current model matrix, or `nil` when the owner is gone, disabled or no
 	/// longer anchored in a scene (in which case the mesh is skipped this frame).
+	/// Used by the per-frame `updateTransforms()`.
 	@MainActor
 	var currentModelMatrix: simd_float4x4? {
 		guard let owner, owner.isActive else { return nil }
+		return modelMatrix(of: owner)
+	}
+
+	/// Model matrix taken at selection time. Doesn't require the owner to be
+	/// active yet: an entity is often selected before it's anchored, and
+	/// callers that never call `updateTransforms()` must still see it.
+	@MainActor
+	var selectionModelMatrix: simd_float4x4? {
+		guard let owner else { return nil }
+		return modelMatrix(of: owner)
+	}
+
+	@MainActor
+	private func modelMatrix(of owner: Entity) -> simd_float4x4 {
 		let noRef: Entity? = nil
 		return simd_mul(owner.transformMatrix(relativeTo: noRef), localTransform)
 	}
@@ -47,41 +64,68 @@ struct OutlineSelectedMesh: Sendable {
 
 // MARK: - Mesh collection (@MainActor)
 
-@available(iOS 15.0, macOS 12.0, *)
+@available(iOS 15.0, macOS 12.0, tvOS 26.0, *)
 @available(visionOS, unavailable)
 @MainActor
 enum OutlineMeshExtraction {
 
-	/// Walks the entity subtree and packs position/index data for every mesh found.
+	/// Walks the entity subtree and packs position/index data for the meshes
+	/// that `mode` selects.
 	static func collect(
 		from entity: Entity,
+		mode: OutlineRenderer.MeshSelection,
 		cache: OutlineGeometryCache
 	) -> [OutlineSelectedMesh] {
 		cache.pruneReleasedEntities()
 		var meshes: [OutlineSelectedMesh] = []
-		collect(from: entity, cache: cache, into: &meshes)
+		collect(from: entity, mode: mode, cache: cache, into: &meshes)
 		return meshes
 	}
 
 	private static func collect(
 		from entity: Entity,
+		mode: OutlineRenderer.MeshSelection,
 		cache: OutlineGeometryCache,
 		into meshes: inout [OutlineSelectedMesh]
 	) {
-		// An entity's own mesh and its children's meshes are all part of it
-		// (e.g. a car body with separate wheel entities).
-		extract(from: entity, cache: cache, into: &meshes)
-		for child in entity.children {
-			collect(from: child, cache: cache, into: &meshes)
+		switch mode {
+		case .subtree:
+			extract(from: entity, cache: cache, into: &meshes)
+			collectChildren(of: entity, mode: mode, cache: cache, into: &meshes)
+
+		case .nearestMeshes:
+			if !extract(from: entity, cache: cache, into: &meshes) {
+				collectChildren(of: entity, mode: mode, cache: cache, into: &meshes)
+			}
+
+		case .preferDescendants:
+			let start = meshes.count
+			collectChildren(of: entity, mode: mode, cache: cache, into: &meshes)
+			if meshes.count == start {
+				extract(from: entity, cache: cache, into: &meshes)
+			}
 		}
 	}
 
+	private static func collectChildren(
+		of entity: Entity,
+		mode: OutlineRenderer.MeshSelection,
+		cache: OutlineGeometryCache,
+		into meshes: inout [OutlineSelectedMesh]
+	) {
+		for child in entity.children {
+			collect(from: child, mode: mode, cache: cache, into: &meshes)
+		}
+	}
+
+	/// Appends `entity`'s own mesh, if it has one. Returns whether it did.
+	@discardableResult
 	private static func extract(
 		from entity: Entity,
 		cache: OutlineGeometryCache,
 		into meshes: inout [OutlineSelectedMesh]
-	) {
-		guard let model = entity.components[ModelComponent.self] else { return }
+	) -> Bool {
+		guard let model = entity.components[ModelComponent.self] else { return false }
 
 		// Primary path: MeshResource.Contents (works for most USD imports).
 		let fromContents = cache.contents(of: model.mesh, owner: entity) {
@@ -93,7 +137,7 @@ enum OutlineMeshExtraction {
 					OutlineSelectedMesh(owner: entity, localTransform: $0.transform, data: $0.data)
 				}
 			)
-			return
+			return true
 		}
 
 		// Fallback: LowLevelMesh (needed for procedurally generated meshes).
@@ -104,7 +148,9 @@ enum OutlineMeshExtraction {
 			meshes.append(
 				OutlineSelectedMesh(owner: entity, localTransform: matrix_identity_float4x4, data: data)
 			)
+			return true
 		}
+		return false
 	}
 
 	private static func extractFromContents(
@@ -144,7 +190,7 @@ enum OutlineMeshExtraction {
 		}
 	}
 
-	@available(iOS 18.0, macOS 15.0, *)
+	@available(iOS 18.0, macOS 15.0, tvOS 26.0, *)
 	private static func extractFromLowLevel(_ mesh: LowLevelMesh) -> OutlineMeshData? {
 		let descriptor = mesh.descriptor
 		guard
@@ -229,7 +275,7 @@ enum OutlineMeshExtraction {
 /// `replace(with:)` edits.
 ///
 /// Only touched on @MainActor (through `OutlineMeshExtraction`).
-@available(iOS 15.0, macOS 12.0, *)
+@available(iOS 15.0, macOS 12.0, tvOS 26.0, *)
 @available(visionOS, unavailable)
 final class OutlineGeometryCache: @unchecked Sendable {
 	typealias Geometry = [(data: OutlineMeshData, transform: simd_float4x4)]

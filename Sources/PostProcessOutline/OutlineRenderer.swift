@@ -28,12 +28,16 @@ import simd
 /// `install(on:)` for `ARView`, or wrap it in `PostProcessOutlineEffect`
 /// for `RealityView` (iOS 26 / macOS 26).
 ///
+/// Use one renderer per view: its intermediate textures are reused across
+/// frames, so two views rendering on separate command queues must not share
+/// a renderer.
+///
 /// ## Threading
 /// Selection and transforms are read on `@MainActor`; `prepare(device:)` and
 /// `encode(...)` run on RealityKit's render thread. All state shared between
 /// the two is protected by a lock, so `color`, `radius` and
 /// `setViewMatrix(_:)` may be called from any thread.
-@available(iOS 15.0, macOS 12.0, *)
+@available(iOS 15.0, macOS 12.0, tvOS 26.0, *)
 @available(visionOS, unavailable)
 public final class OutlineRenderer: @unchecked Sendable {
 
@@ -50,6 +54,8 @@ public final class OutlineRenderer: @unchecked Sendable {
 		var viewMatrix: simd_float4x4 = matrix_identity_float4x4
 		var color: SIMD4<Float>
 		var radius: Int
+		var meshSelection: MeshSelection = .subtree
+		var cachesGeometry = true
 	}
 
 	private let lock = NSLock()
@@ -98,7 +104,8 @@ public final class OutlineRenderer: @unchecked Sendable {
 
 	/// Creates a renderer.
 	/// - Parameters:
-	///   - color: Outline color as RGBA in 0…1. Alpha controls the blend over the frame.
+	///   - color: Outline color as sRGB-encoded RGBA in 0…1 (the values a color
+	///     picker shows). Alpha controls the blend over the frame.
 	///   - radius: Outline thickness in pixels, clamped to `0...maxRadius`.
 	public init(color: SIMD4<Float> = [1, 1, 0, 1], radius: Int = 3) {
 		self.shared = SharedState(color: color, radius: Self.clampRadius(radius))
@@ -111,7 +118,8 @@ public final class OutlineRenderer: @unchecked Sendable {
 
 	// MARK: - Appearance
 
-	/// Outline color as RGBA in 0…1. Takes effect on the next frame.
+	/// Outline color as sRGB-encoded RGBA in 0…1. Takes effect on the next frame.
+	/// It's converted to linear for blending, since RealityKit's frame is linear.
 	public var color: SIMD4<Float> {
 		get { lock.withLock { shared.color } }
 		set { lock.withLock { shared.color = newValue } }
@@ -134,6 +142,37 @@ public final class OutlineRenderer: @unchecked Sendable {
 
 	// MARK: - Selection
 
+	/// Which meshes in a selected entity's hierarchy are outlined.
+	public enum MeshSelection: Sendable, Equatable {
+		/// The entity's own mesh and every mesh below it. The default.
+		case subtree
+		/// The entity's own mesh if it has one; otherwise the nearest meshes
+		/// below it. Avoids outlining a whole imported hierarchy when a
+		/// grouping entity also carries a mesh.
+		case nearestMeshes
+		/// Meshes below the entity, falling back to its own mesh only when it
+		/// has no descendant meshes. For USD stages where a parent prim carries
+		/// an aggregate mesh that doesn't match the displayed child meshes.
+		case preferDescendants
+	}
+
+	/// Whether extracted mesh geometry is cached per entity (default `true`).
+	///
+	/// Caching makes repeat selections ~1 ms instead of a fresh mesh read, but
+	/// a mesh edited in place with `MeshResource.replace(with:)` that keeps its
+	/// bounds keeps its old outline. Turn it off for content that's edited in
+	/// place, such as a live USD stage.
+	public var cachesGeometry: Bool {
+		get { lock.withLock { shared.cachesGeometry } }
+		set { lock.withLock { shared.cachesGeometry = newValue } }
+	}
+
+	/// Which meshes `setSelection` outlines. Applies to the next selection.
+	public var meshSelection: MeshSelection {
+		get { lock.withLock { shared.meshSelection } }
+		set { lock.withLock { shared.meshSelection = newValue } }
+	}
+
 	/// Outlines `entity` (or clears the outline when `nil`).
 	///
 	/// Walks the entity subtree, packs position data and queues it for GPU
@@ -147,10 +186,12 @@ public final class OutlineRenderer: @unchecked Sendable {
 	/// Outlines all of `entities` (or clears the outline when empty).
 	@MainActor
 	public func setSelection(_ entities: [Entity]) {
+		let mode = meshSelection
+		let cache = cachesGeometry ? geometryCache : OutlineGeometryCache()
 		let meshes = entities.flatMap {
-			OutlineMeshExtraction.collect(from: $0, cache: geometryCache)
+			OutlineMeshExtraction.collect(from: $0, mode: mode, cache: cache)
 		}
-		let matrices = meshes.map(\.currentModelMatrix)
+		let matrices = meshes.map(\.selectionModelMatrix)
 		lock.withLock {
 			shared.selection = meshes
 			shared.pendingUpload = meshes.map(\.data)
@@ -169,8 +210,10 @@ public final class OutlineRenderer: @unchecked Sendable {
 	/// detected.
 	@MainActor
 	public func preloadGeometry(of entities: [Entity]) {
+		guard cachesGeometry else { return }
+		let mode = meshSelection
 		for entity in entities {
-			_ = OutlineMeshExtraction.collect(from: entity, cache: geometryCache)
+			_ = OutlineMeshExtraction.collect(from: entity, mode: mode, cache: geometryCache)
 		}
 	}
 
@@ -344,6 +387,13 @@ public final class OutlineRenderer: @unchecked Sendable {
 			return
 		}
 
+		// Resolve the output first, so a failure falls back before any encoder
+		// is open.
+		guard let output = Self.writableTarget(target, device: device) else {
+			blit(from: source, to: target, cb: cb)
+			return
+		}
+
 		let w = source.width
 		let h = source.height
 
@@ -408,19 +458,18 @@ public final class OutlineRenderer: @unchecked Sendable {
 		cenc1.endEncoding()
 
 		// Pass 3 — composite the outline color over the source frame.
-		guard
-			let cenc2 = cb.makeComputeCommandEncoder(),
-			let output = Self.writableTarget(target, device: device)
-		else {
+		guard let cenc2 = cb.makeComputeCommandEncoder() else {
 			blit(from: source, to: target, cb: cb)
 			return
 		}
 		cenc2.setComputePipelineState(compositePipeline)
 		cenc2.setTexture(source, index: 0)
 		cenc2.setTexture(edgeTex, index: 1)
-		cenc2.setTexture(output, index: 2)
-		var c = frame.color
+		cenc2.setTexture(output.texture, index: 2)
+		var c = Self.linear(fromSRGB: frame.color)
 		cenc2.setBytes(&c, length: MemoryLayout<SIMD4<Float>>.size, index: 0)
+		var encodeSRGB: UInt32 = output.encodeSRGB ? 1 : 0
+		cenc2.setBytes(&encodeSRGB, length: MemoryLayout<UInt32>.size, index: 1)
 		dispatch(cenc2, w: w, h: h)
 		cenc2.endEncoding()
 	}
@@ -451,19 +500,41 @@ public final class OutlineRenderer: @unchecked Sendable {
 		)
 	}
 
-	/// GPUs without `.apple2` support can't write the output texture's format
-	/// from a shader; Apple's guidance is to write through a `.bgra8Unorm` view.
+	/// sRGB-encoded RGBA → linear RGB (alpha unchanged).
+	private static func linear(fromSRGB c: SIMD4<Float>) -> SIMD4<Float> {
+		func channel(_ v: Float) -> Float {
+			let v = min(max(v, 0), 1)
+			return v <= 0.04045 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4)
+		}
+		return SIMD4(channel(c.x), channel(c.y), channel(c.z), c.w)
+	}
+
+	/// GPUs without `.apple2` support can't write sRGB textures from a shader.
+	/// Following Apple's guidance, an 8-bit sRGB target is written through a
+	/// non-sRGB view, with the composite pass encoding linear→sRGB itself
+	/// (`encodeSRGB`) so the frame doesn't darken. Other formats (RealityKit
+	/// also hands out `rgba16Float` targets) are written directly; creating a
+	/// view of an incompatible format would abort instead of returning nil.
 	/// https://developer.apple.com/documentation/realitykit/checking-the-pixel-format-of-a-postprocess-effect-s-output-texture
 	private static func writableTarget(
 		_ target: any MTLTexture,
 		device: any MTLDevice
-	) -> (any MTLTexture)? {
-		if device.supportsFamily(.apple2) { return target }
-		guard let view = target.makeTextureView(pixelFormat: .bgra8Unorm) else {
-			logger.error("Failed to create a bgra8Unorm view of the output texture.")
+	) -> (texture: any MTLTexture, encodeSRGB: Bool)? {
+		if device.supportsFamily(.apple2) { return (target, false) }
+
+		let viewFormat: MTLPixelFormat
+		switch target.pixelFormat {
+		case .bgra8Unorm_srgb: viewFormat = .bgra8Unorm
+		case .rgba8Unorm_srgb: viewFormat = .rgba8Unorm
+		default: return (target, false)
+		}
+		// Switching only between sRGB and linear variants of the same layout
+		// doesn't need `.pixelFormatView` usage.
+		guard let view = target.makeTextureView(pixelFormat: viewFormat) else {
+			logger.error("Can't write the sRGB output texture on this GPU; outline skipped.")
 			return nil
 		}
-		return view
+		return (view, true)
 	}
 
 	/// Returns the cached mask/depth/edge textures, recreating them only when the size changes.

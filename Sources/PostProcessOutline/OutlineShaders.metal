@@ -69,11 +69,19 @@ kernel void outlineDilate(
 
 // Blends the outline color over the source frame wherever the edge mask is set.
 
+// Linear -> sRGB transfer, for writing through a non-sRGB view of an sRGB
+// target (see OutlineRenderer.writableTarget).
+static float3 encodeSRGB(float3 c) {
+    c = saturate(c);
+    return select(1.055 * pow(c, 1.0 / 2.4) - 0.055, 12.92 * c, c <= 0.0031308);
+}
+
 kernel void outlineComposite(
     texture2d<float, access::read>  sourceColor  [[texture(0)]],
     texture2d<float, access::read>  edgeMask     [[texture(1)]],
     texture2d<float, access::write> targetColor  [[texture(2)]],
     constant float4&                outlineColor [[buffer(0)]],
+    constant uint&                  encodeOutput [[buffer(1)]],
     uint2 gid                                    [[thread_position_in_grid]]
 ) {
     const uint w = sourceColor.get_width();
@@ -83,6 +91,9 @@ kernel void outlineComposite(
     float4 color = sourceColor.read(gid);
     if (edgeMask.read(gid).r > 0.5) {
         color = mix(color, float4(outlineColor.rgb, 1.0), outlineColor.a);
+    }
+    if (encodeOutput != 0) {
+        color.rgb = encodeSRGB(color.rgb);
     }
     targetColor.write(color, gid);
 }

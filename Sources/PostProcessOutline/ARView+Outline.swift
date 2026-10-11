@@ -13,7 +13,7 @@ import RealityKit
 
 // MARK: - ARView adapter
 
-@available(iOS 15.0, macOS 12.0, *)
+@available(iOS 15.0, macOS 12.0, tvOS 26.0, *)
 @available(visionOS, unavailable)
 extension OutlineRenderer {
 
@@ -70,7 +70,7 @@ extension OutlineRenderer {
 
 /// Undoes `OutlineRenderer.install(on:)`. Cancelling is idempotent and may
 /// happen on any thread; teardown always runs on the main actor.
-@available(iOS 15.0, macOS 12.0, *)
+@available(iOS 15.0, macOS 12.0, tvOS 26.0, *)
 @available(visionOS, unavailable)
 private final class OutlineARViewInstallation: Cancellable, @unchecked Sendable {
 	private let lock = NSLock()

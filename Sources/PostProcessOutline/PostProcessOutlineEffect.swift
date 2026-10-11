@@ -24,7 +24,7 @@ import simd
 ///
 /// Per frame, from a `SceneEvents.Update` subscription, call
 /// `setViewMatrix(_:)` with the inverse camera transform and `updateTransforms()`.
-@available(iOS 26.0, macOS 26.0, *)
+@available(iOS 26.0, macOS 26.0, tvOS 26.0, *)
 @available(visionOS, unavailable)
 public struct PostProcessOutlineEffect: PostProcessEffect {
 	public let renderer: OutlineRenderer
@@ -43,6 +43,12 @@ public struct PostProcessOutlineEffect: PostProcessEffect {
 	public var radius: Int {
 		get { renderer.radius }
 		nonmutating set { renderer.radius = newValue }
+	}
+
+	/// Which meshes in a selected hierarchy are outlined. Forwards to the renderer.
+	public var meshSelection: OutlineRenderer.MeshSelection {
+		get { renderer.meshSelection }
+		nonmutating set { renderer.meshSelection = newValue }
 	}
 
 	/// Sets the outline color. Takes effect on the next frame.
