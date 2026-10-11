@@ -45,3 +45,8 @@ Set the effect in `update:`. Setting it in the make closure can crash inside Rea
 - iOS, macOS and tvOS 26+; not on visionOS. Run-tested on macOS 27; other platforms are build-tested.
 
 See [`Examples/`](Examples) for a working app with both versions.
+
+## License
+
+This project is available under the MIT license.
+See the LICENSE file for more info.
