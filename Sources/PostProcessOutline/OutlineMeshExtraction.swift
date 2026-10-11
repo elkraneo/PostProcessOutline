@@ -200,9 +200,9 @@ enum OutlineMeshExtraction {
 			descriptor.vertexLayouts.indices.contains(posAttr.layoutIndex)
 		else { return nil }
 
-		// Only float3 positions are supported (read into SIMD3 for the mask
-		// vertex shader); other formats are skipped.
-		guard posAttr.format == .float3 else { return nil }
+		// float3 and float4 positions are supported (XYZ is read into SIMD3 for
+		// the mask vertex shader); other formats are skipped.
+		guard posAttr.format == .float3 || posAttr.format == .float4 else { return nil }
 
 		let layout = descriptor.vertexLayouts[posAttr.layoutIndex]
 		let stride = layout.bufferStride

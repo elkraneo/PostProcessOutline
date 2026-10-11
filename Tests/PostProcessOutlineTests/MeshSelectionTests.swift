@@ -112,6 +112,41 @@ struct MeshSelectionTests {
 		#expect(fresh != boxVertices)   // what `cachesGeometry = false` relies on
 	}
 
+	@Test func lowLevelMeshFloat4PositionsAreRead() throws {
+		guard #available(macOS 15.0, iOS 18.0, tvOS 26.0, *) else { return }
+		var descriptor = LowLevelMesh.Descriptor()
+		descriptor.vertexAttributes = [.init(semantic: .position, format: .float4, offset: 0)]
+		descriptor.vertexLayouts = [.init(bufferIndex: 0, bufferStride: 16)]
+		descriptor.vertexCapacity = 3
+		descriptor.indexCapacity = 3
+		descriptor.indexType = .uint32
+		let mesh = try LowLevelMesh(descriptor: descriptor)
+		mesh.withUnsafeMutableBytes(bufferIndex: 0) { raw in
+			let v = raw.bindMemory(to: SIMD4<Float>.self)
+			v[0] = [0, 0, 0, 1]; v[1] = [1, 0, 0, 1]; v[2] = [0, 1, 0, 1]
+		}
+		mesh.withUnsafeMutableIndices { raw in
+			let i = raw.bindMemory(to: UInt32.self)
+			i[0] = 0; i[1] = 1; i[2] = 2
+		}
+		mesh.parts.replaceAll([
+			LowLevelMesh.Part(indexCount: 3, topology: .triangle, bounds: BoundingBox(min: .zero, max: [1, 1, 0]))
+		])
+		let entity = ModelEntity(mesh: try MeshResource(from: mesh), materials: [])
+		let found = OutlineMeshExtraction.collect(from: entity, mode: .subtree, cache: OutlineGeometryCache())
+		let data = try #require(found.first?.data)
+		#expect(data.indexCount == 3)
+		#expect(data.positions.contains([1, 0, 0]))
+	}
+
+	@Test func colorConversionKeepsExtendedRange() {
+		let c = OutlineRenderer.linear(fromSRGB: [1.2, -0.1, 0.5, 0.8])
+		#expect(c.x > 1)                              // wide-gamut component not clipped
+		#expect(c.y < 0)
+		#expect(abs(c.z - 0.2140) < 0.001)           // standard sRGB 0.5 → linear
+		#expect(c.w == 0.8)                           // alpha unchanged
+	}
+
 	@Test func rendererClampsRadius() {
 		let renderer = OutlineRenderer(radius: 10_000)
 		#expect(renderer.radius == OutlineRenderer.maxRadius)

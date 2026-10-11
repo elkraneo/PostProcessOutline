@@ -28,9 +28,8 @@ import simd
 /// `install(on:)` for `ARView`, or wrap it in `PostProcessOutlineEffect`
 /// for `RealityView` (iOS 26 / macOS 26).
 ///
-/// Use one renderer per view: its intermediate textures are reused across
-/// frames, so two views rendering on separate command queues must not share
-/// a renderer.
+/// One renderer can serve several views: intermediate textures are kept per
+/// command queue.
 ///
 /// ## Threading
 /// Selection and transforms are read on `@MainActor`; `prepare(device:)` and
@@ -86,10 +85,17 @@ public final class OutlineRenderer: @unchecked Sendable {
 		// nil entries are meshes whose buffers couldn't be allocated.
 		var gpuMeshes: [GPUMesh?] = []
 
-		// Intermediate textures, recreated only when the frame size changes.
-		var maskTexture: (any MTLTexture)?
-		var depthTexture: (any MTLTexture)?
-		var edgeTexture: (any MTLTexture)?
+		// Intermediate textures per command queue, recreated only when the
+		// frame size changes. Per queue, because frames on different queues
+		// (e.g. one effect shared by two views) can run on the GPU at once.
+		var intermediates: [ObjectIdentifier: IntermediateTextures] = [:]
+	}
+
+	private struct IntermediateTextures {
+		weak var queue: (any MTLCommandQueue)?
+		let mask: any MTLTexture
+		let depth: any MTLTexture
+		let edge: any MTLTexture
 	}
 
 	private let renderLock = NSLock()
@@ -400,6 +406,7 @@ public final class OutlineRenderer: @unchecked Sendable {
 		guard
 			let (maskTex, depthTex, edgeTex) = intermediateTextures(
 				device: device,
+				queue: cb.commandQueue,
 				w: w,
 				h: h
 			)
@@ -500,11 +507,14 @@ public final class OutlineRenderer: @unchecked Sendable {
 		)
 	}
 
-	/// sRGB-encoded RGBA → linear RGB (alpha unchanged).
-	private static func linear(fromSRGB c: SIMD4<Float>) -> SIMD4<Float> {
+	/// sRGB-encoded RGBA → linear RGB (alpha unchanged). Extended-range
+	/// components (below 0 or above 1, from wide-gamut colors) are kept, using
+	/// the sign-mirrored transfer function of extended sRGB.
+	static func linear(fromSRGB c: SIMD4<Float>) -> SIMD4<Float> {
 		func channel(_ v: Float) -> Float {
-			let v = min(max(v, 0), 1)
-			return v <= 0.04045 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4)
+			let a = abs(v)
+			let l = a <= 0.04045 ? a / 12.92 : pow((a + 0.055) / 1.055, 2.4)
+			return v < 0 ? -l : l
 		}
 		return SIMD4(channel(c.x), channel(c.y), channel(c.z), c.w)
 	}
@@ -537,19 +547,20 @@ public final class OutlineRenderer: @unchecked Sendable {
 		return (view, true)
 	}
 
-	/// Returns the cached mask/depth/edge textures, recreating them only when the size changes.
+	/// Returns `queue`'s cached mask/depth/edge textures, recreating them only
+	/// when the size changes.
 	// Requires renderLock.
 	private func intermediateTextures(
 		device: any MTLDevice,
+		queue: any MTLCommandQueue,
 		w: Int,
 		h: Int
 	) -> (any MTLTexture, any MTLTexture, any MTLTexture)? {
-		if let mask = render.maskTexture,
-			let depth = render.depthTexture,
-			let edge = render.edgeTexture,
-			mask.width == w, mask.height == h
+		let key = ObjectIdentifier(queue)
+		if let cached = render.intermediates[key], cached.queue === queue,
+			cached.mask.width == w, cached.mask.height == h
 		{
-			return (mask, depth, edge)
+			return (cached.mask, cached.depth, cached.edge)
 		}
 
 		guard
@@ -578,9 +589,8 @@ public final class OutlineRenderer: @unchecked Sendable {
 			Self.logger.error("Failed to allocate \(w)x\(h) outline textures.")
 			return nil
 		}
-		render.maskTexture = mask
-		render.depthTexture = depth
-		render.edgeTexture = edge
+		render.intermediates = render.intermediates.filter { $0.value.queue != nil }
+		render.intermediates[key] = IntermediateTextures(queue: queue, mask: mask, depth: depth, edge: edge)
 		return (mask, depth, edge)
 	}
 
