@@ -54,7 +54,6 @@ struct RealityViewOutlineDemo: View {
 			selectableEntities = selectable
 			// Read the outline geometry now so the first tap doesn't hitch.
 			effect.preloadGeometry(of: selectable)
-			content.renderingEffects.customPostProcessing = .effect(effect)
 
 			// Animate first, then hand the outline the new camera and entity transforms.
 			let effect = effect
@@ -72,6 +71,9 @@ struct RealityViewOutlineDemo: View {
 				effect.setViewMatrix(camera.transformMatrix(relativeTo: noRef).inverse)
 				effect.updateTransforms()
 			}
+		} update: { content in
+			// Set in update:, not make: — see the README.
+			content.renderingEffects.customPostProcessing = .effect(effect)
 		}
 		.gesture(
 			TapGesture()
