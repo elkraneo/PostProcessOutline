@@ -127,7 +127,22 @@ enum OutlineMeshExtraction {
 	) -> Bool {
 		guard let model = entity.components[ModelComponent.self] else { return false }
 
-		// Primary path: MeshResource.Contents (works for most USD imports).
+		// LowLevelMesh first, when the mesh has one: its vertex descriptor gives
+		// the real stride. For LowLevelMesh-backed meshes (USDKit's
+		// USDStageComponent), MeshResource.Contents reads the interleaved vertex
+		// buffer as packed positions — on macOS 27 a 13,482-vertex mesh came back
+		// as 89,880 "positions" starting with a normal — which draws spikes.
+		if #available(iOS 18.0, macOS 15.0, *),
+			let low = model.mesh.lowLevelMesh,
+			let data = extractFromLowLevel(low)
+		{
+			meshes.append(
+				OutlineSelectedMesh(owner: entity, localTransform: matrix_identity_float4x4, data: data)
+			)
+			return true
+		}
+
+		// MeshResource.Contents (most USD imports and generated meshes).
 		let fromContents = cache.contents(of: model.mesh, owner: entity) {
 			extractFromContents($0.contents)
 		}
@@ -136,17 +151,6 @@ enum OutlineMeshExtraction {
 				contentsOf: fromContents.map {
 					OutlineSelectedMesh(owner: entity, localTransform: $0.transform, data: $0.data)
 				}
-			)
-			return true
-		}
-
-		// Fallback: LowLevelMesh (needed for procedurally generated meshes).
-		if #available(iOS 18.0, macOS 15.0, *),
-			let low = model.mesh.lowLevelMesh,
-			let data = extractFromLowLevel(low)
-		{
-			meshes.append(
-				OutlineSelectedMesh(owner: entity, localTransform: matrix_identity_float4x4, data: data)
 			)
 			return true
 		}
