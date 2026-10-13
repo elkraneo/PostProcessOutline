@@ -7,7 +7,7 @@ Pixel-exact selection outlines for RealityKit, as a Metal post-process. Constant
 ## Install
 
 ```swift
-.package(url: "https://github.com/elkraneo/PostProcessOutline.git", from: "1.1.0")
+.package(url: "https://github.com/elkraneo/PostProcessOutline.git", from: "1.1.2")
 ```
 
 ## ARView (UIKit / AppKit, iOS 15+)
@@ -20,21 +20,27 @@ outline.setSelection(arView.entity(at: point))  // nil clears
 
 ## RealityView (SwiftUI, iOS 26+)
 
+For RealityView, prefer [SelectionEffects](https://github.com/elkraneo/SelectionEffects): the same outline as a component (`SelectionEffectComponent`), with per-entity colors and no per-frame wiring. To use this package directly:
+
 ```swift
 @State private var effect = PostProcessOutlineEffect(color: .yellow, radius: 3)
 
 RealityView { content in
+    var attached = false
+    var later = content
     updates = content.subscribe(to: SceneEvents.Update.self) { _ in  // every frame
+        if !attached {  // attach on the first frame, not in make or update:
+            attached = true
+            later.renderingEffects.customPostProcessing = .effect(effect)
+        }
         effect.setViewMatrix(camera.transformMatrix(relativeTo: nil).inverse)
         effect.updateTransforms()
     }
-} update: { content in
-    content.renderingEffects.customPostProcessing = .effect(effect)
 }
 effect.setSelection(entity)
 ```
 
-Set the effect in `update:`. Setting it in the make closure can crash inside RealityKit when the view is hosted with `NSHostingView`.
+Attach the effect on the first frame. On macOS 27, setting it in the make closure crashed every time, and in `update:` intermittently; this looks like a RealityKit bug ([details and reproduction](https://github.com/elkraneo/SelectionEffects/blob/main/Docs/PostProcessTiming.md)).
 
 ## Notes
 

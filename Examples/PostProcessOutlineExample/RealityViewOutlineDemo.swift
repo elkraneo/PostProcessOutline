@@ -60,7 +60,15 @@ struct RealityViewOutlineDemo: View {
 			let camera = camera
 			let noRef: Entity? = nil
 			var elapsed: TimeInterval = 0
+			// Attach the effect on the first frame: setting it in make (or update:)
+			// can crash inside RealityKit on macOS 27. See the README.
+			var later = content
+			var attached = false
 			updateSubscription = content.subscribe(to: SceneEvents.Update.self) { event in
+				if !attached {
+					attached = true
+					later.renderingEffects.customPostProcessing = .effect(effect)
+				}
 				elapsed += event.deltaTime
 				let t = Float(elapsed)
 
@@ -71,9 +79,6 @@ struct RealityViewOutlineDemo: View {
 				effect.setViewMatrix(camera.transformMatrix(relativeTo: noRef).inverse)
 				effect.updateTransforms()
 			}
-		} update: { content in
-			// Set in update:, not make: — see the README.
-			content.renderingEffects.customPostProcessing = .effect(effect)
 		}
 		.gesture(
 			TapGesture()
